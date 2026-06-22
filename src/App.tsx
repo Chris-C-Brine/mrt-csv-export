@@ -1,7 +1,23 @@
-import {useMemo} from 'react'
-import {MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef} from 'material-react-table'
-import {useMrtCsvExport} from './lib'
-import './App.css'
+import { useMemo } from 'react'
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+  type MRT_TableInstance,
+  type MRT_RowData,
+} from 'material-react-table'
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  Typography,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
+} from '@mui/material'
+import { Download } from '@mui/icons-material'
+import { useMrtCsvExport } from './lib'
 
 type Tag = {
   id: number
@@ -16,6 +32,68 @@ type Person = {
   tags: Tag[]
 }
 
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+    text: {
+      primary: 'rgba(0, 0, 0, 0.87)',
+      secondary: 'rgba(0, 0, 0, 0.6)',
+    },
+  },
+})
+
+/**
+ * Custom toolbar actions for the table allows proper use of hooks
+ * @param table MRT_TableInstance<T extends MRT_RowData>
+ * @constructor
+ */
+function TopToolbarActions<T extends MRT_RowData>({ table }: { table: MRT_TableInstance<T> }) {
+  const { exportToCsv } = useMrtCsvExport(table)
+
+  return (
+    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+      <Button
+        startIcon={<Download />}
+        variant="contained"
+        onClick={() => exportToCsv({ filename: 'all-people' })}
+      >
+        Export All
+      </Button>
+      <Button
+        startIcon={<Download />}
+        variant="outlined"
+        onClick={() =>
+          exportToCsv({
+            filename: 'selected-people',
+            onlySelected: true,
+          })
+        }
+        disabled={!table.getIsSomeRowsSelected()}
+      >
+        Export Selected
+      </Button>
+      <Button
+        startIcon={<Download />}
+        variant="outlined"
+        onClick={() =>
+          exportToCsv({
+            filename: 'people-with-hidden',
+            includeHiddenColumns: true,
+          })
+        }
+      >
+        Export with Hidden
+      </Button>
+    </Box>
+  )
+}
+
 function App() {
   const data: Person[] = useMemo(
     () => [
@@ -25,8 +103,8 @@ function App() {
         email: 'john@example.com',
         age: 30,
         tags: [
-          {id: 1, name: 'React'},
-          {id: 2, name: 'TypeScript'},
+          { id: 1, name: 'React' },
+          { id: 2, name: 'TypeScript' },
         ],
       },
       {
@@ -35,8 +113,8 @@ function App() {
         email: 'jane@example.com',
         age: 25,
         tags: [
-          {id: 3, name: 'Vue'},
-          {id: 4, name: 'JavaScript'},
+          { id: 3, name: 'Vue' },
+          { id: 4, name: 'JavaScript' },
         ],
       },
       {
@@ -44,7 +122,7 @@ function App() {
         name: 'Bob Johnson',
         email: 'bob@example.com',
         age: 35,
-        tags: [{id: 5, name: 'Angular'}],
+        tags: [{ id: 5, name: 'Angular' }],
       },
     ],
     []
@@ -72,22 +150,12 @@ function App() {
         accessorFn: (row) => row.tags.map((t) => t.name).join(', '),
         id: 'tags',
         header: 'Tags',
-        Cell: ({cell}) => (
-          <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
+        Cell: ({ cell }) => (
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {cell.row.original.tags.map((tag) => (
-              <span
-                key={tag.id}
-                style={{
-                  background: '#e0e0e0',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                }}
-              >
-                {tag.name}
-              </span>
+              <Chip key={tag.id} label={tag.name} size="small" color="primary" variant="outlined" />
             ))}
-          </div>
+          </Box>
         ),
       },
     ],
@@ -98,44 +166,25 @@ function App() {
     columns,
     data,
     enableRowSelection: true,
+    renderTopToolbarCustomActions: ({ table }) => <TopToolbarActions table={table} />,
   })
 
-  const {exportToCsv} = useMrtCsvExport(table)
-
   return (
-    <div style={{padding: '20px'}}>
-      <h1>useMrtCsvExport Demo</h1>
-      <p>
-        This demo shows how to use <code>accessorFn</code> to properly export complex data types
-        (like arrays of objects) to CSV.
-      </p>
-      <div style={{marginBottom: '20px', display: 'flex', gap: '10px'}}>
-        <button onClick={() => exportToCsv({filename: 'all-people'})}>
-          Export All Rows
-        </button>
-        <button
-          onClick={() =>
-            exportToCsv({
-              filename: 'selected-people',
-              onlySelected: true,
-            })
-          }
-        >
-          Export Selected Rows
-        </button>
-        <button
-          onClick={() =>
-            exportToCsv({
-              filename: 'people-with-hidden',
-              includeHiddenColumns: true,
-            })
-          }
-        >
-          Export with Hidden Columns
-        </button>
-      </div>
-      <MaterialReactTable table={table}/>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box sx={{ mb: 3, width: "100%" }}>
+          <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#000' }}>
+            useMrtCsvExport Demo
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)' }}>
+            This demo shows how to use <code>accessorFn</code> to properly export complex data
+            types (like arrays of objects) to CSV. Export buttons are in the table toolbar.
+          </Typography>
+        </Box>
+        <MaterialReactTable table={table} />
+      </Container>
+    </ThemeProvider>
   )
 }
 

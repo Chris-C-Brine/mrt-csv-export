@@ -24,6 +24,8 @@ export default defineConfig([
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ])

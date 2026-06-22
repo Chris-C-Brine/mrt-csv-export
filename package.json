@@ -1,6 +1,6 @@
 {
   "name": "@chris-c-brine/mrt-csv-export",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Material React Table integration with export-to-csv using Vite",
   "type": "module",
   "main": "./dist/index.js",
