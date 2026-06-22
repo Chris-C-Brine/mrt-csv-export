@@ -1,0 +1,64 @@
+{
+  "name": "@chris-c-brine/mrt-csv-export",
+  "version": "1.0.0",
+  "description": "Material React Table integration with export-to-csv using Vite",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite --open",
+    "build": "tsc && vite build",
+    "build:lib": "tsc && vite build --mode library",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "material-react-table",
+    "export-to-csv",
+    "csv export",
+    "react",
+    "typescript",
+    "vite"
+  ],
+  "author": "Christopher Brine",
+  "license": "AAL",
+  "peerDependencies": {
+    "@emotion/react": ">=11.0.0",
+    "@emotion/styled": ">=11.0.0",
+    "@mui/material": ">=5.0.0",
+    "export-to-csv": ">=1.0.0",
+    "material-react-table": ">=3.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@emotion/react": ">=11.0.0",
+    "@emotion/styled": ">=11.0.0",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": ">=5.0.0",
+    "export-to-csv": ">=1.0.0",
+    "material-react-table": ">=3.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12",
+    "vite-plugin-dts": "^4.5.0"
+  }
+}
