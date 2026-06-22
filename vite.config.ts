@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         dts({
+          tsconfigPath: './tsconfig.lib.json',
           insertTypesEntry: true,
         }),
       ],
