@@ -12,7 +12,10 @@ A React hook for exporting Material React Table (MRT) data to CSV format using t
 - Simple integration with Material React Table
 - Respects MRT column definitions including `accessorFn`
 - Export all rows or only selected rows
+- **Export filtered and sorted data** - Respects active filters and sorting
 - Control the visibility of hidden columns in exports
+- **Success/Error callbacks** - Get notified with export statistics or detailed errors
+- **Comprehensive error handling** - Descriptive error messages with context
 - Configurable CSV export options
 - TypeScript support
 
@@ -37,13 +40,18 @@ npm install react react-dom material-react-table export-to-csv @mui/material @em
 The recommended way to use `useMrtCsvExport` is to create a separate component for your toolbar actions, which allows proper hook usage:
 
 ```tsx
-// noinspection JSAnnotator
-
-import {useMemo} from 'react'
-import {MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef} from 'material-react-table'
-import {Box, Button, Chip} from '@mui/material'
-import {Download} from '@mui/icons-material'
-import {useMrtCsvExport} from '@chris-c-brine/mrt-csv-export'
+import { useMemo, useState } from 'react'
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+  type MRT_TableInstance,
+  type MRT_RowData,
+} from 'material-react-table'
+import { Box, Button, Chip, Alert, Snackbar } from '@mui/material'
+import { Download } from '@mui/icons-material'
+import { useMrtCsvExport } from '@chris-c-brine/mrt-csv-export'
+import type { ExportSuccessInfo, ExportError } from '@chris-c-brine/mrt-csv-export'
 
 type Tag = {
   id: number
@@ -58,39 +66,122 @@ type Person = {
   tags: Tag[]
 }
 
-// Extract toolbar to a component so we can use hooks
-function TopToolbarActions({table}: { table: any }) {
-  const {exportToCsv} = useMrtCsvExport(table)
+/**
+ * Custom toolbar actions for the table allows proper use of hooks
+ * @param table MRT_TableInstance<T extends MRT_RowData>
+ * @param onExportSuccess onSuccess callback
+ * @param onExportError onError callback
+ * @constructor
+ */
+function TopToolbarActions<T extends MRT_RowData>({
+  table,
+  onExportSuccess,
+  onExportError,
+}: {
+  table: MRT_TableInstance<T>
+  onExportSuccess: (info: ExportSuccessInfo) => void
+  onExportError: (error: ExportError) => void
+}) {
+  const { exportToCsv } = useMrtCsvExport(table)
 
   return (
-    <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap'}}>
+    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
       <Button
-        startIcon={<Download/>}
+        size="small"
+        startIcon={<Download />}
         variant="contained"
-        onClick={() => exportToCsv({filename: 'all-people'})}
+        onClick={() =>
+          exportToCsv({
+            filename: 'all-people',
+            onSuccess: onExportSuccess,
+            onError: onExportError,
+          })
+        }
       >
-        Export All
+        All
       </Button>
       <Button
-        startIcon={<Download/>}
+        size="small"
+        startIcon={<Download />}
         variant="outlined"
-        onClick={() => exportToCsv({filename: 'selected-people', onlySelected: true})}
+        onClick={() =>
+          exportToCsv({
+            filename: 'selected-people',
+            onlySelected: true,
+            onSuccess: onExportSuccess,
+            onError: onExportError,
+          })
+        }
         disabled={!table.getIsSomeRowsSelected()}
       >
-        Export Selected
+        Selected
       </Button>
       <Button
-        startIcon={<Download/>}
+        size="small"
+        startIcon={<Download />}
         variant="outlined"
-        onClick={() => exportToCsv({filename: 'people-with-hidden', includeHiddenColumns: true})}
+        onClick={() =>
+          exportToCsv({
+            filename: 'filtered-sorted',
+            respectFilters: true,
+            respectSorting: true,
+            onSuccess: onExportSuccess,
+            onError: onExportError,
+          })
+        }
       >
-        Export with Hidden
+        Filtered/Sorted
+      </Button>
+      <Button
+        size="small"
+        startIcon={<Download />}
+        variant="outlined"
+        onClick={() =>
+          exportToCsv({
+            filename: 'people-with-hidden',
+            includeHiddenColumns: true,
+            onSuccess: onExportSuccess,
+            onError: onExportError,
+          })
+        }
+      >
+        +Hidden
       </Button>
     </Box>
   )
 }
 
 function MyTable() {
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean
+    message: string
+    severity: 'success' | 'error'
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  })
+
+  const handleExportSuccess = (info: ExportSuccessInfo) => {
+    setSnackbar({
+      open: true,
+      message: `Successfully exported ${info.rowCount} row(s) and ${info.columnCount} column(s) to ${info.filename}`,
+      severity: 'success',
+    })
+  }
+
+  const handleExportError = (error: ExportError) => {
+    setSnackbar({
+      open: true,
+      message: `Export failed: ${error.message}`,
+      severity: 'error',
+    })
+  }
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false })
+  }
+
   const data: Person[] = useMemo(
     () => [
       {
@@ -99,8 +190,8 @@ function MyTable() {
         email: 'john@example.com',
         age: 30,
         tags: [
-          {id: 1, name: 'React'},
-          {id: 2, name: 'TypeScript'},
+          { id: 1, name: 'React' },
+          { id: 2, name: 'TypeScript' },
         ],
       },
       {
@@ -109,9 +200,33 @@ function MyTable() {
         email: 'jane@example.com',
         age: 25,
         tags: [
-          {id: 3, name: 'Vue'},
-          {id: 4, name: 'JavaScript'},
+          { id: 3, name: 'Vue' },
+          { id: 4, name: 'JavaScript' },
         ],
+      },
+      {
+        id: 3,
+        name: 'Bob Johnson',
+        email: 'bob@example.com',
+        age: 35,
+        tags: [{ id: 5, name: 'Angular' }],
+      },
+      {
+        id: 4,
+        name: 'Alice Williams',
+        email: 'alice@example.com',
+        age: 28,
+        tags: [
+          { id: 6, name: 'React' },
+          { id: 7, name: 'Node.js' },
+        ],
+      },
+      {
+        id: 5,
+        name: 'Charlie Brown',
+        email: 'charlie@example.com',
+        age: 32,
+        tags: [{ id: 8, name: 'Python' }],
       },
     ],
     []
@@ -119,20 +234,20 @@ function MyTable() {
 
   const columns = useMemo<MRT_ColumnDef<Person>[]>(
     () => [
-      {accessorKey: 'id', header: 'ID'},
-      {accessorKey: 'name', header: 'Name'},
-      {accessorKey: 'email', header: 'Email'},
-      {accessorKey: 'age', header: 'Age'},
+      { accessorKey: 'id', header: 'ID' },
+      { accessorKey: 'name', header: 'Name' },
+      { accessorKey: 'email', header: 'Email' },
+      { accessorKey: 'age', header: 'Age' },
       {
         // Transform array of objects to comma-separated string for CSV
         accessorFn: (row) => row.tags.map((t) => t.name).join(', '),
         id: 'tags',
         header: 'Tags',
         // Custom Cell component for visual display
-        Cell: ({cell}) => (
-          <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap'}}>
+        Cell: ({ cell }) => (
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {cell.row.original.tags.map((tag) => (
-              <Chip key={tag.id} label={tag.name} size="small" color="primary" variant="outlined"/>
+              <Chip key={tag.id} label={tag.name} size="small" color="primary" variant="outlined" />
             ))}
           </Box>
         ),
@@ -145,10 +260,33 @@ function MyTable() {
     columns,
     data,
     enableRowSelection: true,
-    renderTopToolbarCustomActions: ({table}) => <TopToolbarActions table={table}/>,
+    enableColumnFilters: true,
+    enableGlobalFilter: true,
+    enableSorting: true,
+    renderTopToolbarCustomActions: ({ table }) => (
+      <TopToolbarActions
+        table={table}
+        onExportSuccess={handleExportSuccess}
+        onExportError={handleExportError}
+      />
+    ),
   })
 
-  return <MaterialReactTable table={table}/>
+  return (
+    <>
+      <MaterialReactTable table={table} />
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
+  )
 }
 ```
 
@@ -162,15 +300,94 @@ function MyTable() {
 
 ```tsx
 exportToCsv({
+  // File Options
   filename: 'my-export', // Default: 'export'
-  onlySelected: true, // Export only selected rows
-  includeHiddenColumns: true, // Include hidden columns
+  fileExtension: 'csv', // Default: 'csv'
+
+  // Data Selection
+  onlySelected: true, // Export only selected rows (default: false)
+  respectFilters: true, // Export filtered data (default: true)
+  respectSorting: true, // Export sorted data (default: true)
+  includeHiddenColumns: true, // Include hidden columns (default: false)
+
+  // CSV Format Options
   fieldSeparator: ',', // Default: ','
   quoteStrings: true, // Default: true
   decimalSeparator: '.', // Default: '.'
-  showLabels: true, // Show column headers
-  fileExtension: 'csv', // Default: 'csv'
-  useBom: true, // UTF-8 BOM for Excel compatibility
+  showLabels: true, // Show column headers (default: true)
+  useBom: true, // UTF-8 BOM for Excel compatibility (default: true)
+
+  // Callbacks
+  onSuccess: (info) => {
+    console.log(`Exported ${info.rowCount} rows and ${info.columnCount} columns`)
+  },
+  onError: (error) => {
+    console.error(`Export failed: ${error.message}`)
+  }
+})
+```
+
+### Export Options Details
+
+#### New Options
+
+- **`respectFilters`** (default: `true`): When enabled, exports only the rows that match active column filters and global search. If no filters are active, all rows are exported.
+
+- **`respectSorting`** (default: `true`): When enabled, exports rows in the current sorted order. If no sorting is active, uses the default order.
+
+- **`onSuccess`**: Callback function invoked after successful export. Receives an `ExportSuccessInfo` object:
+  ```tsx
+  {
+    rowCount: number        // Number of rows exported
+    columnCount: number     // Number of columns exported
+    filename: string        // Full filename (including extension)
+    respectFilters: boolean // Whether filters were applied
+    respectSorting: boolean // Whether sorting was applied
+    onlySelected: boolean   // Whether only selected rows were exported
+  }
+  ```
+
+- **`onError`**: Callback function invoked when export fails. Receives an `ExportError` object:
+  ```tsx
+  {
+    name: 'ExportError'
+    code: 'NO_ROWS' | 'NO_COLUMNS' | 'INVALID_CONFIG' | 'GENERATION_FAILED'
+    message: string              // Descriptive error message
+    context?: Record<string, any> // Additional error context
+  }
+  ```
+
+### Common Use Cases
+
+#### Export Filtered Data
+```tsx
+// User applies filters to the table
+// Click export to get only the filtered results
+exportToCsv({
+  filename: 'filtered-data',
+  respectFilters: true, // default
+})
+```
+
+#### Export All Data (Ignore Filters)
+```tsx
+// Export complete dataset even if filters are active
+exportToCsv({
+  filename: 'complete-data',
+  respectFilters: false,
+})
+```
+
+#### Export with Notifications
+```tsx
+exportToCsv({
+  filename: 'my-export',
+  onSuccess: (info) => {
+    alert(`Successfully exported ${info.rowCount} rows!`)
+  },
+  onError: (error) => {
+    alert(`Export failed: ${error.message}`)
+  }
 })
 ```
 
