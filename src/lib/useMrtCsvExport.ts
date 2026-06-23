@@ -1,9 +1,27 @@
 import { useCallback } from 'react'
 import { mkConfig, generateCsv, download } from 'export-to-csv'
-import type { MRT_Row, MRT_RowData, MRT_RowModel, MRT_TableInstance } from 'material-react-table'
-import { ExportError, type CsvExportOptions } from './types'
-import type { RowModel, Row } from '@tanstack/table-core'
+import type { MRT_RowData, MRT_TableInstance } from 'material-react-table'
+import { ExportError, MRT_INTERNAL_COLUMN_IDS, type CsvExportOptions } from './types'
 
+/**
+ * Custom React hook for exporting Material React Table data to CSV format
+ *
+ * @template TData - The type of data in the table rows
+ * @param table - The Material React Table instance
+ * @returns An object containing the exportToCsv function
+ *
+ * @example
+ * ```tsx
+ * const { exportToCsv } = useMrtCsvExport(table);
+ *
+ * exportToCsv({
+ *   filename: 'my-data',
+ *   respectFilters: true,
+ *   onSuccess: (info) => console.log(`Exported ${info.rowCount} rows`),
+ *   onError: (error) => console.error(error.message)
+ * });
+ * ```
+ */
 export const useMrtCsvExport = <TData extends MRT_RowData>(table: MRT_TableInstance<TData>) => {
   const exportToCsv = useCallback(
     ({
@@ -23,28 +41,15 @@ export const useMrtCsvExport = <TData extends MRT_RowData>(table: MRT_TableInsta
     }: CsvExportOptions = {}) => {
       try {
         // Get rows to export with proper filtering and sorting
-        let rows: MRT_Row<TData>[] | Row<TData>[]
-
-        if (onlySelected) {
-          // Export only selected rows
-          rows = table.getSelectedRowModel().rows
-        } else {
-          // Start with all rows (pre-pagination to get complete dataset)
-          let rowModel: MRT_RowModel<TData> | RowModel<TData> = table.getPrePaginationRowModel()
-
-
-          // Apply filtering if enabled and filters are active
-          if (respectFilters && table.getState().columnFilters.length > 0) {
-            rowModel = table.getFilteredRowModel()
-          }
-
-          // Apply sorting if enabled and sorting is active
-          if (respectSorting && table.getState().sorting.length > 0) {
-            rowModel = table.getSortedRowModel()
-          }
-
-          rows = rowModel.rows
-        }
+        const rows = onlySelected
+          ? table.getSelectedRowModel().rows
+          : respectFilters && table.getState().columnFilters.length > 0
+            ? respectSorting && table.getState().sorting.length > 0
+              ? table.getSortedRowModel().rows
+              : table.getFilteredRowModel().rows
+            : respectSorting && table.getState().sorting.length > 0
+              ? table.getSortedRowModel().rows
+              : table.getPrePaginationRowModel().rows
 
         // Validate we have rows to export
         if (rows.length === 0) {
@@ -67,13 +72,13 @@ export const useMrtCsvExport = <TData extends MRT_RowData>(table: MRT_TableInsta
           throw error
         }
 
-        // Get columns - filter out non-data columns like selection, actions, etc.
+        // Get columns - filter out MRT internal columns
         const allColumns = includeHiddenColumns
           ? table.getAllColumns()
           : table.getVisibleLeafColumns()
 
         const columns = allColumns.filter(
-          (col) => col.id !== 'mrt-row-select' && col.id !== 'mrt-row-actions'
+          (col) => !Object.values(MRT_INTERNAL_COLUMN_IDS).includes(col.id as any)
         )
 
         // Validate we have columns to export
