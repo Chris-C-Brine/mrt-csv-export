@@ -15,8 +15,6 @@ export default defineConfig(({ mode }) => {
         }),
       ],
       build: {
-        // Disable public folder copy only when --mode library is passed
-        copyPublicDir: mode !== 'library',
 
         // Empties the dist folder before building
         emptyOutDir: true,
