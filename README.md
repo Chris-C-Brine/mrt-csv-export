@@ -425,4 +425,4 @@ npm run lint
 
 ## License
 
-[AAL](LICENSE) © Christopher C. Brine
+[AAL](./public/LICENSE) © Christopher C. Brine
