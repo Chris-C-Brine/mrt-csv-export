@@ -1,6 +1,6 @@
 {
   "name": "@chris-c-brine/mrt-csv-export",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Material React Table integration with export-to-csv using Vite",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
     "build": "tsc && vite build",
     "build:lib": "tsc && vite build --mode library",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "material-react-table",
