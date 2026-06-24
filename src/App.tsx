@@ -17,6 +17,7 @@ import {
   CssBaseline,
   Alert,
   Snackbar,
+  Checkbox,
 } from '@mui/material'
 import { Download } from '@mui/icons-material'
 import { useMrtCsvExport } from './lib'
@@ -66,6 +67,9 @@ function TopToolbarActions<T extends MRT_RowData>({
   onExportSuccess: (info: ExportSuccessInfo) => void
   onExportError: (error: ExportError) => void
 }) {
+  const [isChecked, setIsChecked] = useState(false)
+  const isDisabled = !isChecked && !(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected())
+
   const { exportToCsv } = useMrtCsvExport(table)
 
   return (
@@ -88,15 +92,28 @@ function TopToolbarActions<T extends MRT_RowData>({
         size="small"
         startIcon={<Download />}
         variant="outlined"
-        onClick={() =>
-          exportToCsv({
+        aria-disabled={isDisabled}
+        sx={{ opacity: isDisabled ? 0.5 : 1 }}
+        endIcon={
+          <Checkbox
+            checked={isChecked}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation() // Prevents bubbling to button
+              setIsChecked(e.target.checked)
+            }}
+            title={'Enable Selected'}
+          />
+        }
+        onClick={() => {
+          if (isDisabled) return
+          return exportToCsv({
             filename: 'selected-people',
             onlySelected: true,
             onSuccess: onExportSuccess,
             onError: onExportError,
           })
-        }
-        disabled={!table.getIsSomeRowsSelected()}
+        }}
       >
         Selected
       </Button>
@@ -276,7 +293,8 @@ function App() {
           </Typography>
           <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)', mb: 2 }}>
             This demo shows how to use <code>accessorFn</code> to properly export complex data types
-            (like arrays of objects) to CSV.<br /> Export buttons are in the table toolbar. See code in README.md.
+            (like arrays of objects) to CSV.
+            <br /> Export buttons are in the table toolbar. See code in README.md.
           </Typography>
           <Alert severity="info" sx={{ mb: 2, textAlign: 'left' }}>
             <strong>New Features:</strong>

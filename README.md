@@ -14,7 +14,7 @@ A React hook for exporting Material React Table (MRT) data to CSV format using t
 - Export all rows or only selected rows
 - **Export filtered and sorted data** - Respects active filters and sorting
 - Control the visibility of hidden columns in exports
-- **Success/Error callbacks** - Get notified with export statistics or detailed errors
+- **Success/Error callbacks** – Get notified with export statistics or detailed errors
 - **Comprehensive error handling** - Descriptive error messages with context
 - Configurable CSV export options
 - TypeScript support
@@ -48,7 +48,7 @@ import {
   type MRT_TableInstance,
   type MRT_RowData,
 } from 'material-react-table'
-import { Box, Button, Chip, Alert, Snackbar } from '@mui/material'
+import { Box, Button, Chip, Alert, Snackbar, Checkbox } from '@mui/material'
 import { Download } from '@mui/icons-material'
 import { useMrtCsvExport } from '@chris-c-brine/mrt-csv-export'
 import type { ExportSuccessInfo, ExportError } from '@chris-c-brine/mrt-csv-export'
@@ -82,8 +82,11 @@ function TopToolbarActions<T extends MRT_RowData>({
   onExportSuccess: (info: ExportSuccessInfo) => void
   onExportError: (error: ExportError) => void
 }) {
+  const [isChecked, setIsChecked] = useState(false)
+  const isDisabled = !isChecked && !(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected())
+  
   const { exportToCsv } = useMrtCsvExport(table)
-
+  
   return (
     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
       <Button
@@ -120,15 +123,28 @@ function TopToolbarActions<T extends MRT_RowData>({
         size="small"
         startIcon={<Download />}
         variant="outlined"
-        onClick={() =>
-          exportToCsv({
-            filename: 'filtered-sorted',
-            respectFilters: true,
-            respectSorting: true,
+        aria-disabled={isDisabled}
+        sx={{ opacity: isDisabled ? 0.5 : 1 }}
+        endIcon={
+          <Checkbox
+            checked={isChecked}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation() // Prevents bubbling to button
+              setIsChecked(e.target.checked)
+            }}
+            title={'Enable Selected'}
+          />
+        }
+        onClick={() => {
+          if (isDisabled) return
+          return exportToCsv({
+            filename: 'selected-people',
+            onlySelected: true,
             onSuccess: onExportSuccess,
             onError: onExportError,
           })
-        }
+        }}
       >
         Filtered/Sorted
       </Button>
@@ -333,7 +349,7 @@ exportToCsv({
 
 - **`respectFilters`** (default: `true`): When enabled, exports only the rows that match active column filters and global search. If no filters are active, all rows are exported.
 
-- **`respectSorting`** (default: `true`): When enabled, exports rows in the current sorted order. If no sorting is active, uses the default order.
+- **`respectSorting`** (default: `true`): When enabled, exports rows in the current sorted order. If no sorting is active, it uses the default order.
 
 - **`onSuccess`**: Callback function invoked after successful export. Receives an `ExportSuccessInfo` object:
   ```tsx
