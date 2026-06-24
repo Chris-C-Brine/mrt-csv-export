@@ -15,7 +15,7 @@
     "build:lib": "tsc && vite build --mode library",
     "lint": "eslint .",
     "preview": "vite preview",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build:lib"
   },
   "keywords": [
     "material-react-table",
@@ -28,21 +28,16 @@
   "author": "Christopher Brine",
   "license": "AAL",
   "peerDependencies": {
-    "export-to-csv": ">=1.0.0",
     "material-react-table": ">=3.0.0",
-    "react": ">=18.0.0"
+    "@mui/material": ">=5.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "export-to-csv": ">=1.0.0"
   },
-  "dependencies": {
+  "devDependencies": {
     "@emotion/react": ">=11.0.0",
     "@emotion/styled": ">=11.0.0",
     "@mui/icons-material": "^9.0.0",
-    "@mui/material": ">=5.0.0",
-    "export-to-csv": ">=1.0.0",
-    "material-react-table": ">=3.0.0",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
-  },
-  "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@eslint/markdown": "^8.0.2",
     "@types/node": "^24.12.3",
